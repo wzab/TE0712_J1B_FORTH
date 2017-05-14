@@ -24,7 +24,7 @@ set_property IOSTANDARD LVCMOS33 [get_ports sda*]
 set_property PACKAGE_PIN W21 [get_ports {scl[0]}]
 set_property PACKAGE_PIN T20 [get_ports {sda[0]}]
 
-create_clock -period 20.000 -name clk -waveform {0.000 25.000} [get_ports clk_p clk_n]
+create_clock -period 20.000 -name clk -waveform {0.000 25.000} [get_ports clk_p]
 
 # UART connections
 
