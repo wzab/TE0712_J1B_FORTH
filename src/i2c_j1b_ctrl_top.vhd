@@ -36,19 +36,15 @@ use unisim.vcomponents.all;
 
 entity i2c_j1b_ctrl_top is
   generic (
-    NUM_I2CS : integer := 5);
+    NUM_I2CS : integer := 1);
   port (
     clk0_n      : in    std_logic;
     clk0_p      : in    std_logic;
-    clk1_n      : in    std_logic;
-    clk1_p      : in    std_logic;
+    clk1      : in    std_logic;
     clk2_n      : in    std_logic;
     clk2_p      : in    std_logic;
-    clk         : in    std_logic;
-    -- Pin needed to enable switch matrix
-    clk_updaten : out   std_logic;
-    -- Pin needed to enable Si570
-    si570_oe    : out   std_logic;
+    clk_n       : in    std_logic;
+    clk_p       : in    std_logic;
     --rst_p : in    std_logic;
     scl         : inout std_logic_vector(NUM_I2CS-1 downto 0);
     sda         : inout std_logic_vector(NUM_I2CS-1 downto 0);
@@ -60,6 +56,7 @@ end entity i2c_j1b_ctrl_top;
 
 architecture beh of i2c_j1b_ctrl_top is
 
+  signal clk      : std_logic;
   signal frq0_in  : std_logic;
   signal clk_frq0 : std_logic_vector(31 downto 0);
   signal frq1_in  : std_logic;
@@ -71,8 +68,8 @@ architecture beh of i2c_j1b_ctrl_top is
 
 begin
 
-  si570_oe    <= '1';
-  clk_updaten <= '1';
+  --si570_oe    <= '1';
+  --clk_updaten <= '1';
 
   ibufgds0 : IBUFDS port map(
     i  => clk0_p,
@@ -80,12 +77,13 @@ begin
     --ceb => '0',
     o  => frq0_in
     );
-  ibufgds1 : IBUFDS_GTE2 port map(
-    i   => clk1_p,
-    ib  => clk1_n,
-    ceb => '0',
-    o   => frq1_in
+  ibufgds_sys : IBUFDS port map(
+    i  => clk_p,
+    ib => clk_n,
+    --ceb => '0',
+    o  => clk
     );
+  frq1_in <= clk1;
   ibufgds2 : IBUFDS_GTE2 port map(
     i   => clk2_p,
     ib  => clk2_n,
