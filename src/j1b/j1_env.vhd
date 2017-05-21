@@ -7,7 +7,7 @@
 -- Company    :
 -- License    : BSD License
 -- Created    : 2016-07-07
--- Last update: 2016-08-04
+-- Last update: 2017-05-21
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -172,6 +172,7 @@ architecture test of j1_env is
   signal mem_wr                           : std_logic;
   signal io_ready                         : std_logic;
   signal resetq                           : std_logic                     := '0';
+  signal resetq_p                         : std_logic                     := '1';
   signal sv_mem_addr                      : std_logic_vector(15 downto 0) := (others => '0');
 
 
@@ -230,18 +231,32 @@ architecture test of j1_env is
 
 begin  -- architecture test
 
+  resetq_p <= not resetq;
   i2c_sel <= to_integer(unsigned(i2c_sel_reg));
   out0    <= out0_reg;
   out1    <= out1_reg;
   out2    <= out2_reg;
   out3    <= out3_reg;
 
-  P1 : process (clk, rst_n) is
+  --P1 : process (clk, rst_n) is
+  --begin  -- process P1
+  --  if rst_n = '0' then                 -- asynchronous reset (active high)
+  --    reset_count <= (others => '0');
+  --    resetq      <= '0';
+  --  elsif clk'event and clk = '1' then  -- rising clock edge
+  --    if reset_count < 20000000 then
+  --      resetq      <= '0';
+  --      reset_count <= reset_count + 1;
+  --    else
+  --      resetq <= '1';
+  --    end if;
+  --  end if;
+  --end process P1;
+
+  -- Below is the version prepared for running without reset
+  P1 : process (clk) is
   begin  -- process P1
-    if rst_n = '0' then                 -- asynchronous reset (active high)
-      reset_count <= (others => '0');
-      resetq      <= '0';
-    elsif clk'event and clk = '1' then  -- rising clock edge
+    if clk'event and clk = '1' then  -- rising clock edge
       if reset_count < 20000000 then
         resetq      <= '0';
         reset_count <= reset_count + 1;
@@ -305,7 +320,7 @@ begin  -- architecture test
     if clk'event and clk = '1' then     -- rising clock edge
       if io_wr_d = '1' then
         case to_integer(io_addr_d) is
-          when I2C_BUS_SEL => 
+          when I2C_BUS_SEL =>
             i2c_sel_reg <= dout_d(7 downto 0);
           when OUT0_ADDR =>
             out0_reg <= dout_d;
@@ -458,7 +473,7 @@ begin  -- architecture test
 
   uart_2 : uart
     generic map (
-      brg_div => 27) -- 50e6/115200/16
+      brg_div => 27)                    -- 50e6/115200/16
     port map (
       clk         => clk,
       din         => uart_din,
@@ -481,7 +496,7 @@ begin  -- architecture test
       CNT_LENGTH => 32)
     port map (
       ref_clk => clk,
-      rst_p   => '0',
+      rst_p   => resetq_p,
       frq_in  => clk_0,
       frq_out => clk_frq0);
 
@@ -491,7 +506,7 @@ begin  -- architecture test
       CNT_LENGTH => 32)
     port map (
       ref_clk => clk,
-      rst_p   => '0',
+      rst_p   => resetq_p,
       frq_in  => clk_1,
       frq_out => clk_frq1);
 
@@ -501,7 +516,7 @@ begin  -- architecture test
       CNT_LENGTH => 32)
     port map (
       ref_clk => clk,
-      rst_p   => '0',
+      rst_p   => resetq_p,
       frq_in  => clk_2,
       frq_out => clk_frq2);
 

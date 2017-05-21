@@ -7,7 +7,7 @@
 -- License    : PUBLIC DOMAIN
 -- Company    : 
 -- Created    : 2015-05-03
--- Last update: 2016-08-04
+-- Last update: 2017-05-20
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -64,10 +64,12 @@ architecture beh of i2c_j1b_ctrl_top is
   signal frq2_in  : std_logic;
   signal clk_frq2 : std_logic_vector(31 downto 0);
   signal lpbck0, lpbck1, lpbck2, lpbck3 : std_logic_vector(31 downto 0);
+  signal rst_n : std_logic := '1';
 
 
 begin
 
+  rst_n <= '1';
   --si570_oe    <= '1';
   --clk_updaten <= '1';
 
@@ -97,7 +99,7 @@ begin
       NUM_I2CS => NUM_I2CS)
     port map (
       clk     => clk,                   -- boot_clk
-      rst_n   => '1',                   -- was sys_rst(0), but didnt work!
+      rst_n   => rst_n,                   -- was sys_rst(0), but didnt work!
       scl     => scl,
       sda     => sda,
       uart_tx => uart_rxd,
