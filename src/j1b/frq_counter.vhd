@@ -6,7 +6,7 @@
 -- Author     : Wojciech M. Zabolotny  <wzab@wzdell.nasz.dom>
 -- Company    : 
 -- Created    : 2015-05-15
--- Last update: 2015-05-15
+-- Last update: 2017-05-21
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ end entity frq_counter;
 architecture beh of frq_counter is
 
   signal pulse_cnt : unsigned(CNT_LENGTH-1 downto 0) := (others => '0');
-  signal gate_cnt : integer range 0 to CNT_TIME+2 := 0;
+  signal gate_cnt : integer range 0 to 2*CNT_TIME+2 := 0;
   signal clear, gate, gate_ack, clear_ack : std_logic := '0';
   
 begin  -- architecture beh
@@ -50,45 +50,48 @@ begin  -- architecture beh
     if rst_p = '1' then               -- asynchronous reset (active low)
       gate_cnt <= 0;
       frq_out <= (others => '0');
+      clear <= '1';
     elsif ref_clk'event and ref_clk = '1' then  -- rising clock edge
       if gate_cnt = 0 then
+        clear <= '0';
         gate <= '1';
         gate_cnt <= gate_cnt + 1;
       elsif gate_cnt = CNT_TIME then
-        gate <= '0';
+        if gate_ack = '0' then
+          frq_out <= (others => '0');   -- clock inactive?
+          clear <= '1';
+          gate_cnt <= 0;
+        else
+          gate <= '0';
+          gate_cnt <= gate_cnt+1;
+        end if;
+      elsif gate_cnt > CNT_TIME then        
+        gate_cnt <= gate_cnt+1;
         if gate_ack = '0' then
           frq_out <= std_logic_vector(pulse_cnt);
           clear <= '1';
-          gate_cnt <= gate_cnt+1;
-        end if;
-      elsif gate_cnt = CNT_TIME+1 then
-        if clear_ack = '1' then
-          clear <= '0';
-          gate_cnt <= CNT_TIME+2;                  
-        end if;
-      elsif gate_cnt = CNT_TIME+2 then
-        if clear_ack = '0' then
+          gate_cnt <= 0;
+        elsif gate_cnt >= 2 * CNT_TIME then
+          frq_out <= (others => '0');   -- clock inactive?
+          clear <= '1';
           gate_cnt <= 0;
         end if;
       else
-        gate_cnt <= gate_cnt + 1;
-      end if;      
+        gate_cnt <= gate_cnt+1;        
+      end if;
     end if;
   end process clk1;
 
-  clk2: process (frq_in, rst_p) is
+  clk2: process (frq_in, clear) is
   begin  -- process clk2
-    if rst_p = '1' then                   -- asynchronous reset (active low)
+    if clear = '1' then                   -- asynchronous reset (active low)
       pulse_cnt <= (others => '0');
       gate_ack <= '0';
-      clear_ack <= '0';
     elsif frq_in'event and frq_in = '1' then  -- rising clock edge
       gate_ack <= gate;
       clear_ack <= clear;
       if gate_ack = '1' then
         pulse_cnt <= pulse_cnt + 1;
-      elsif clear_ack = '1' then
-        pulse_cnt <= (others => '0');
       end if;
     end if;
   end process clk2;
