@@ -1,5 +1,5 @@
-# AFCK_J1B_FORTH - Forth based system for AFCK board initialization and diagnostics
-This repository contains HDL and forth sources for the Forth based system for AFCK board ( http://www.ohwr.org/projects/afck/wiki ) initialization and diagnostics. 
+# TE0712_J1B_FORTH - Forth based system for TE0712 board initialization and diagnostics
+This repository contains HDL and forth sources for the Forth based system for TE0712 board ( https://shop.trenz-electronic.de/en/Products/Trenz-Electronic/TE07XX-Artix-7/TE0712-Artix-7/ ) initialization and diagnostics. 
 The significant part of this project is "swapforth" and J1B Forth CPU developed by James Bowman (https://github.com/jamesbowman/swapforth)
 
 I have ported J1B to VHDL (in https://github.com/wzab/swapforth ) and added the functionality to dump the program/data memory
@@ -11,47 +11,10 @@ The project defines the small Forth CPU with program/data memory and some basic 
 the operator, I2C controller connected via very simplified Wishbone controller, 4 output and 4 input ports for communication
 with the surrounding logic). The controller may be easily reused in other projects and extented. It should be trivial
 to adapt it for other I2C or SPI configurable FPGA based boards.
-It can be used to interactively control the AFCK board but also to define own procedures (words) performing complex configuration or diagnostic procedures.
+It can be used to interactively control the TE0712 board but also to define own procedures (words) performing complex configuration or diagnostic procedures.
 
 # Basic usage examples
 
-Initialization of communication
-
-    AFCK_i2c_init
-
-Setting of the Si57x clock to 125MHz
-
-    125000000 Si57x_SetFrq
-
-Setting of the clock 0 in FM-S14 in FMC1 to 130MHz
-
-    0 bus_sel 130000000 FMS14Q_SetFrq
-    
-Switching the clock matrix (input 15 routed to output 4)
-
-    15 4 ClkMtx_SetOut
-
-Switching the clock matrix (output 5 switched off)
-
-    -1 5 ClkMtx_SetOut
-    
-Reading the unique board identifier
-
-    EUI_read
-    
-After that, the identifier is placed in the EUI_buf buffer, from where it can be e.g. displayed (the first byte
-is the length of the buffer):
-
-    EUI_buf 9 .bytebuf
-    8 FC C2 3D 0 0 0 12 30  ok
-    
-It is also possible to transfer the identifier to two output ports, so that it can be used by the 
-surrounding logic (e.g. to create the board's MAC address)
-
-    : EUI_to_OUT0_OUT1
-       0 5 1 do 8 lshift EUI_buf i + C@ or loop OUT0_REG io!
-       0 9 5 do 8 lshift EUI_buf i + C@ or loop OUT1_REG io!
-    ;
 
 # Quick start
 
@@ -99,22 +62,7 @@ both - initial configuration of the board and interactive debugging.
 Below is an example of the startup procedure:
 
     : cold
-       \ Set status "running" on out2
-       $a501 OUT2_REG io!
-       AFCK_i2c_init \ Start I2C controller
-       0 bus_sel 120000000 FMS14Q_SetFrq \ Set clock 0 in FM-S14 in FMC1 to 120MHz
-       \ Set status "FMS14 clock configured"
-       $a502 OUT2_REG io!
-       156250000 Si57x_SetFrq \ Set Si57x clock to 156.25 MHz
-       \ Set status "Si57x clock configured"
-       $a503 OUT2_REG io!
-       15 7 ClkMtx_SetOut \ Connect Si57x to the output 7 of clock matrix
-       \ Transfer the EUI to out0 and out1, so that the board logic may access it
-       EUI_read
-       0 5 1 do 8 lshift EUI_buf i + C@ or loop OUT0_REG io!
-       0 9 5 do 8 lshift EUI_buf i + C@ or loop OUT1_REG io!
-       \ Report status "success" on out1
-       $a500 OUT2_REG io!
+      i2c_init
     ;   
 
 If the OUT2 port is not set to $a500, after reasonable time it means that the "cold" word has failed. The value of the status allows to find which procedure has failed.
